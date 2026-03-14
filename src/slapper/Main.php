@@ -228,101 +228,7 @@ class Main extends PluginBase implements Listener {
                     $this->getServer()->dispatchCommand($player, trim(implode(" ", $args)));
 				} else {
                     $sender->sendMessage(self::PREFIX . "Player not found.");
-				}
-				return true;
-			case "slapper":
-                if ($sender instanceof Player) {
-                    if (!isset($args[0])) {
-                        $sender->sendMessage(self::PREFIX . "Please type '/slapper help'.");
-                        return true;
-                    }
-                    $arg = array_shift($args);
-                    switch ($arg) {
-                        case "id":
-                            if (!$sender->hasPermission("slapper.id")) {
-                                $sender->sendMessage(self::MSG_NO_PERM);
-                                return true;
-                            }
-                            $this->idSessions[$sender->getName()] = true;
-                            $sender->sendMessage(self::PREFIX . "Hit an entity to get its ID!");
-                            return true;
-                        case "version":
-                            if (!$sender->hasPermission("slapper.version")) {
-                                $sender->sendMessage(self::MSG_NO_PERM);
-                                return true;
-                            }
-                            $desc = $this->getDescription();
-                            $sender->sendMessage(self::PREFIX . TextFormat::BLUE . $desc->getName() . " " . $desc->getVersion() . " " . TextFormat::GREEN . "by " . TextFormat::GOLD . "jojoe77777");
-                            return true;
-                        case "cancel":
-                        case "stopremove":
-                        case "stopid":
-                            unset($this->hitSessions[$sender->getName()]);
-                            unset($this->idSessions[$sender->getName()]);
-                            $sender->sendMessage(self::PREFIX . "Cancelled.");
-                            return true;
-                        case "list":
-                        case "entities":
-                            if (!$sender->hasPermission("slapper.list")) {
-                                $sender->sendMessage(self::MSG_NO_PERM);
-                                return true;
-                            }
-                            $sender->sendMessage(self::PREFIX . "Entity List: "
-. TextFormat::BLUE . "Bat, Blaze, Boat, CaveSpider, Chicken, Cow, Creeper, Donkey, ElderGuardian, EndCrystal, Enderman, Endermite, Evoker, FallingSand, Ghast, Guardian, Horse, Human, Husk, IronGolem, LavaSlime, Llama, Minecart, Mule, MushroomCow, Ocelot, Pig, PigZombie, PolarBear, PrimedTNT, Rabbit, Sheep, Shulker, Silverfish, Skeleton, SkeletonHorse, Slime, Snowman, Spider, Squid, Stray, Vex, Villager, Vindicator, Witch, Wither, WitherSkeleton, Wolf, Zombie, ZombieHorse, ZombieVillager");
-                            return true;
-                        case "remove":
-                            if (!$sender->hasPermission("slapper.remove")) {
-                                $sender->sendMessage(self::MSG_NO_PERM);
-                                return true;
-                            }
-                            if (!isset($args[0])) {
-                                $this->hitSessions[$sender->getName()] = true;
-                                $sender->sendMessage(self::PREFIX . "Hit an entity to remove it.");
-                                return true;
-                            }
-                            $entity = $sender->getWorld()->getEntity((int) $args[0]);
-                            if ($entity !== null) {
-                                if ($entity instanceof SlapperEntity || $entity instanceof SlapperHuman) {
-                                    (new SlapperDeletionEvent($entity))->call();
-                                    $entity->close();
-                                    $sender->sendMessage(self::PREFIX . "Entity removed.");
-                                } else {
-                                    $sender->sendMessage(self::PREFIX . "That entity is not handled by Slapper.");
-                                }
-                            } else {
-                                $sender->sendMessage(self::PREFIX . "Entity does not exist.");
-                            }
-                            return true;
-                        case "edit":
-                            if (!$sender->hasPermission("slapper.edit")) {
-                                $sender->sendMessage(self::MSG_NO_PERM);
-                                return true;
-                            }
-                            if (isset($args[0])) {
-                                $world = $sender->getWorld();
-                                $entity = $world->getEntity((int) $args[0]);
-                                if ($entity !== null) {
-                                    if ($entity instanceof SlapperInterface) {
-                                        if (isset($args[1])) {
-                                            switch ($args[1]) {
-                                                case "helm":
-                                                case "helmet":
-                                                case "head":
-                                                case "hat":
-                                                case "cap":
-                                                    if ($entity instanceof SlapperHuman) {
-                                                        if (isset($args[2])) {
-                                                            $item = StringToItemParser::getInstance()->parse($args[2]);
-                                                            if ($item === null){
-                                                                $sender->sendMessage(self::PREFIX . "There is no such item with name $args[2]");
-                                                                return true;
-                                                            }
-                                                            $entity->getArmorInventory()->setHelmet($item);
-                                                            $sender->sendMessage(self::PREFIX . "Helmet updated.");
-                                                        } else {
-                                                            $sender->sendMessage(self::PREFIX . "Please enter an item ID.");
-                                                        }
-                                                    } else {
+
                                                         $sender->sendMessage(self::PREFIX . "That entity can not wear armor.");
                                                     }
                                                     return true;
@@ -709,3 +615,73 @@ class Main extends PluginBase implements Listener {
         }
     }
 }
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace slapper;
+
+use pocketmine\event\Listener;
+use pocketmine\plugin\PluginBase;
+use pocketmine\utils\TextFormat;
+use pocketmine\player\Player;
+use pocketmine\event\entity\EntityDamageEvent;
+use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\world\World;
+use jojoe77777\FormAPI\SimpleForm;
+
+class Main extends PluginBase implements Listener {
+
+    public function onEnable(): void {
+        $this->getServer()->getPluginManager()->registerEvents($this, $this);
+    }
+
+    public function onEntityDamage(EntityDamageEvent $event): void {
+        $entity = $event->getEntity();
+        
+        if ($entity instanceof SlapperInterface) {
+            $event->cancel();
+            
+            if (!$event instanceof EntityDamageByEntityEvent) return;
+            
+            $damager = $event->getDamager();
+            if (!$damager instanceof Player) return;
+
+            if (strpos(TextFormat::clean($entity->getNameTag()), "FFA") !== false) {
+                $this->openFfaMenu($damager);
+                return;
+            }
+        }
+    }
+
+    public function openFfaMenu(Player $player): void {
+        $form = new SimpleForm(function (Player $player, $data = null) {
+            if ($data === null) return;
+            
+            if ($data === 0) {
+                $worldName = "FFA";
+                $manager = $this->getServer()->getWorldManager();
+                
+                if (!$manager->isWorldLoaded($worldName)) {
+                    $manager->loadWorld($worldName);
+                }
+                
+                $world = $manager->getWorldByName($worldName);
+                
+                if ($world !== null) {
+                    $player->teleport($world->getSpawnLocation());
+                    $player->sendMessage("§a» Вы отправились на арену §eFFA§a!");
+                } else {
+                    $player->sendMessage("§cМир FFA не найден!");
+                }
+            }
+        });
+
+        $form->setTitle("§6§lВЫБОР РЕЖИМА");
+        $form->setContent("§7Нажмите на кнопку:");
+        $form->addButton("§c§l⚔ FFA АРЕНА\n§8Клик для входа");
+        $form->sendToPlayer($player);
+    }
+}
+```
