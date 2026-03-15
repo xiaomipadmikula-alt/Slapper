@@ -162,7 +162,7 @@ class Main extends PluginBase implements Listener {
         $this->commandSender = new SlapperCommandSender($this);
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
         $this->registerEntities();
-	$this->checkUpdate();
+        $this->checkUpdate();
     }
 
     public function registerEntities(): void {
@@ -202,11 +202,11 @@ class Main extends PluginBase implements Listener {
         }, ['Human']);
     }
 
-	public function checkUpdate(): void {
-		$this->getServer()->getAsyncPool()->submitTask(new CheckUpdateTask($this->getDescription()->getName(), $this->getDescription()->getVersion()));
-	}
+    public function checkUpdate(): void {
+        $this->getServer()->getAsyncPool()->submitTask(new CheckUpdateTask($this->getDescription()->getName(), $this->getDescription()->getVersion()));
+    }
 
-	/**
+    /**
      * @param CommandSender $sender
      * @param Command       $command
      * @param string        $label
@@ -226,11 +226,11 @@ class Main extends PluginBase implements Listener {
                 $player = $this->getServer()->getPlayerExact(array_shift($args));
                 if ($player instanceof Player) {
                     $this->getServer()->dispatchCommand($player, trim(implode(" ", $args)));
-		} else {
+                } else {
                     $sender->sendMessage(self::PREFIX . "Player not found.");
-		}
-		return true;
-	    case "slapper":
+                }
+                return true;
+            case "slapper":
                 if ($sender instanceof Player) {
                     if (!isset($args[0])) {
                         $sender->sendMessage(self::PREFIX . "Please type '/slapper help'.");
@@ -572,14 +572,14 @@ class Main extends PluginBase implements Listener {
                                 } else {
                                     $sender->sendMessage(self::PREFIX . "Entity does not exist.");
                                 }
-			    } else {
+                            } else {
                                 $sender->sendMessage($this->helpHeader);
                                 foreach ($this->editArgs as $msgArg) {
                                     $sender->sendMessage(TextFormat::GREEN . " - " . $msgArg . "\n");
                                 }
-			    }
-			    return true;
-			case "help":
+                            }
+                            return true;
+                        case "help":
                         case "?":
                             $sender->sendMessage($this->helpHeader);
                             foreach ($this->mainArgs as $msgArg) {
@@ -647,6 +647,14 @@ class Main extends PluginBase implements Listener {
                     $sender->sendMessage(self::PREFIX . "This command only works in game.");
                     return true;
                 }
+            // НОВАЯ КОМАНДА /menu
+            case "menu":
+                if (!$sender instanceof Player) {
+                    $sender->sendMessage(self::PREFIX . "Эта команда только в игре");
+                    return true;
+                }
+                $this->openFFAMenu($sender);
+                return true;
         }
         return true;
     }
@@ -775,3 +783,27 @@ class Main extends PluginBase implements Listener {
         $player->sendForm($form);
     }
 }
+```
+
+Что ещё нужно сделать?
+
+1. Создай или обнови plugin.yml
+
+В папке plugins/Slapper/ должен быть файл plugin.yml. Если его нет — создай. Если есть — добавь туда команду menu:
+
+```yaml
+name: Slapper
+main: slapper\Main
+version: 1.5.0
+api: 5.0.0
+load: POSTWORLD
+author: jojoe77777
+description: Slapper for PM5
+commands:
+  menu:
+    description: "Открыть меню FFA"
+    usage: "/menu"
+    permission: slapper.menu
+permissions:
+  slapper.menu:
+    default: true
