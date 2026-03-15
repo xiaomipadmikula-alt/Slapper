@@ -1,4 +1,3 @@
-```php
 <?php
 
 declare(strict_types=1);
@@ -78,7 +77,7 @@ use slapper\entities\SlapperZombieVillager;
 use slapper\events\SlapperCreationEvent;
 use slapper\events\SlapperDeletionEvent;
 use slapper\events\SlapperHitEvent;
-// Добавляем импорт для FormAPI
+// Импорт FormAPI
 use jojoe77777\FormAPI\SimpleForm;
 
 class Main extends PluginBase implements Listener {
@@ -163,7 +162,7 @@ class Main extends PluginBase implements Listener {
         $this->commandSender = new SlapperCommandSender($this);
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
         $this->registerEntities();
-		$this->checkUpdate();
+	$this->checkUpdate();
     }
 
     public function registerEntities(): void {
@@ -207,8 +206,6 @@ class Main extends PluginBase implements Listener {
 		$this->getServer()->getAsyncPool()->submitTask(new CheckUpdateTask($this->getDescription()->getName(), $this->getDescription()->getVersion()));
 	}
 
-
-
 	/**
      * @param CommandSender $sender
      * @param Command       $command
@@ -229,11 +226,11 @@ class Main extends PluginBase implements Listener {
                 $player = $this->getServer()->getPlayerExact(array_shift($args));
                 if ($player instanceof Player) {
                     $this->getServer()->dispatchCommand($player, trim(implode(" ", $args)));
-				} else {
+		} else {
                     $sender->sendMessage(self::PREFIX . "Player not found.");
-				}
-				return true;
-			case "slapper":
+		}
+		return true;
+	    case "slapper":
                 if ($sender instanceof Player) {
                     if (!isset($args[0])) {
                         $sender->sendMessage(self::PREFIX . "Please type '/slapper help'.");
@@ -575,14 +572,14 @@ class Main extends PluginBase implements Listener {
                                 } else {
                                     $sender->sendMessage(self::PREFIX . "Entity does not exist.");
                                 }
-							} else {
+			    } else {
                                 $sender->sendMessage($this->helpHeader);
                                 foreach ($this->editArgs as $msgArg) {
                                     $sender->sendMessage(TextFormat::GREEN . " - " . $msgArg . "\n");
                                 }
-							}
-							return true;
-						case "help":
+			    }
+			    return true;
+			case "help":
                         case "?":
                             $sender->sendMessage($this->helpHeader);
                             foreach ($this->mainArgs as $msgArg) {
@@ -682,20 +679,7 @@ class Main extends PluginBase implements Listener {
 
             $damagerName = $damager->getName();
 
-            // === НОВАЯ ЛОГИКА ДЛЯ МЕНЮ FFA ===
-            // Проверяем, содержит ли NameTag текст "FFA" (регистронезависимо)
-            if (stripos($entity->getNameTag(), "FFA") !== false) {
-                // Отменяем стандартное действие (чтобы команды не выполнялись)
-                // Событие уже отменено выше ($event->cancel()), но мы явно укажем, что хотим предотвратить выполнение команд
-                // Для этого мы просто не будем выполнять код ниже, который обрабатывает команды и сессии, и сразу откроем меню.
-                
-                // Открываем меню FFA
-                $this->openFFAMenu($damager);
-                return; // Выходим, чтобы не выполнять остальную логику (проверку сессий и команд)
-            }
-            // ================================
-
-            // Стандартная логика Slapper (сессии удаления/id и команды)
+            // Стандартная логика Slapper (сессии удаления/id)
             if (isset($this->hitSessions[$damagerName])) {
                 if ($entity instanceof SlapperHuman) {
                     $entity->getInventory()->clearAll();
@@ -735,6 +719,24 @@ class Main extends PluginBase implements Listener {
     }
 
     /**
+     * НОВЫЙ ОБРАБОТЧИК: Срабатывает при ударе по NPC
+     * 
+     * @param SlapperHitEvent $event
+     * @priority HIGHEST
+     * @return void
+     */
+    public function onSlapperHit(SlapperHitEvent $event): void {
+        $player = $event->getDamager();
+        $entity = $event->getEntity();
+
+        // Проверяем, содержит ли NameTag текст "FFA"
+        if (stripos($entity->getNameTag(), "FFA") !== false) {
+            $event->cancel(); // Отменяем, чтобы команды из конфига не выполнялись
+            $this->openFFAMenu($player); // Открываем меню
+        }
+    }
+
+    /**
      * Открывает меню FFA игроку и телепортирует его в мир "ffa" при нажатии на кнопку.
      *
      * @param Player $player
@@ -756,7 +758,7 @@ class Main extends PluginBase implements Listener {
                 
                 $targetWorld = $worldManager->getWorldByName("ffa");
                 if ($targetWorld instanceof World) {
-                    // Получаем спавн мира или безопасную точку (можно заменить на конкретные координаты)
+                    // Получаем спавн мира
                     $spawn = $targetWorld->getSpawnLocation();
                     $player->teleport($spawn);
                     $player->sendMessage(self::PREFIX . TextFormat::GREEN . "Телепортация в мир FFA...");
@@ -768,7 +770,6 @@ class Main extends PluginBase implements Listener {
 
         $form->setTitle(TextFormat::BOLD . TextFormat::GOLD . "FFA");
         $form->setContent(TextFormat::GRAY . "Нажмите кнопку, чтобы присоединиться к битве!");
-        // Добавляем только одну кнопку
         $form->addButton("§c§lИГРАТЬ В FFA");
         
         $player->sendForm($form);
