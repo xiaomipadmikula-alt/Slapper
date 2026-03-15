@@ -19,6 +19,10 @@ commands:
     description: Do nothing!
     usage: "/nothing"
     permission: slapper.nothing
+  menu:
+    description: "Открыть меню FFA"
+    usage: "/menu"
+    permission: slapper.menu
 
 permissions:
     slapper.create:
@@ -45,3 +49,6 @@ permissions:
     slapper.help:
         description: Allow viewing Slapper help page
         default: op
+    slapper.menu:
+        description: "Разрешение на использование команды /menu"
+        default: true
